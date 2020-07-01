@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import UserNotifications
 
 class ToDoListViewController: UIViewController {
     
@@ -19,7 +20,70 @@ class ToDoListViewController: UIViewController {
         super.viewDidLoad()
         tableView.delegate = self
         tableView.dataSource = self
+        
         loadData()
+        authorizeLocalNotifications()
+    }
+    
+    func authorizeLocalNotifications() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { (granted, error)
+            in
+            guard error == nil else {
+                print("ERROR: \(error!.localizedDescription)")
+                return
+            }
+            if granted {
+                print("✅ Notifications Authorization Granted")
+            } else {
+                print("❌ Notifications Authorization Denied")
+                // TODO: put in alert telling user what to do
+            }
+        }
+    }
+    
+    func setNotifications() {
+        guard ToDoItems.count > 0 else {
+            return
+        }
+        // remove all notifications
+        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+        
+        // re-create them with updated data that was just saved
+        for index in 0..<ToDoItems.count {
+            if ToDoItems[index].reminderSet {
+                let toDoItem = ToDoItems[index]
+                ToDoItems[index].notificationID = setCalendarNotification(title: toDoItem.name, subtitle: "", body: toDoItem.notes, badgeNumber: nil, sound: .default, date: toDoItem.date)
+            }
+        }
+    }
+    
+    func setCalendarNotification(title: String, subtitle: String, body: String, badgeNumber: NSNumber?, sound: UNNotificationSound?, date: Date) -> String{
+        // create content
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.subtitle = subtitle
+        content.body = body
+        content.sound = sound
+        content.badge = badgeNumber
+        
+        // create trigger
+        var dateComponents = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: date)
+        dateComponents.second = 00
+        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: false)
+        
+        // create request
+        let notificationID = UUID().uuidString
+        let request = UNNotificationRequest(identifier: notificationID, content: content, trigger: trigger)
+        
+        // register request with notification center
+        UNUserNotificationCenter.current().add(request) { (error) in
+            if let error = error {
+                print("ERROR: \(error.localizedDescription)")
+            } else {
+                print("Notification scheduled \(notificationID), title: \(content.title)")
+            }
+        }
+        return notificationID
     }
     
     func loadData() {
@@ -32,9 +96,9 @@ class ToDoListViewController: UIViewController {
             ToDoItems = try jsonDecoder.decode(Array<ToDoItem>.self, from: data)
             tableView.reloadData()
         } catch {
-             print("ERROR: could not load data \(error.localizedDescription)")
+            print("ERROR: could not load data \(error.localizedDescription)")
         }
-
+        
     }
     
     func saveData() {
@@ -48,6 +112,7 @@ class ToDoListViewController: UIViewController {
         } catch {
             print("ERROR: could not save data \(error.localizedDescription)")
         }
+        setNotifications()
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
@@ -92,12 +157,10 @@ class ToDoListViewController: UIViewController {
 
 extension ToDoListViewController: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        print("numberOfRowsInSection was just called and returns \(ToDoItems.count)")
         return ToDoItems.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        print("cellForRowAt was just called for indexPath.row = \(indexPath.row) which is the cell containing \(ToDoItems[indexPath.row])")
         let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
         cell.textLabel?.text = ToDoItems[indexPath.row].name
         return cell
