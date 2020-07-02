@@ -15,4 +15,5 @@ struct ToDoItem: Codable {
     var reminderSet: Bool
     var notificationID: String?
     // notifications are optional, hence the question mark
+    var completed: Bool
 }
