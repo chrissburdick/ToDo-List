@@ -155,7 +155,7 @@ class ToDoListViewController: UIViewController {
     }
 }
 
-extension ToDoListViewController: UITableViewDelegate, UITableViewDataSource, listTableViewCellDelegate {
+extension ToDoListViewController: UITableViewDelegate, UITableViewDataSource, ListTableViewCellDelegate {
     
     func checkBoxToggle(sender: ListTableViewCell) {
         if let selectedIndexPath = tableView.indexPath(for: sender) {
@@ -172,8 +172,7 @@ extension ToDoListViewController: UITableViewDelegate, UITableViewDataSource, li
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath) as! ListTableViewCell
         cell.delegate = self
-        cell.nameLabel.text = ToDoItems[indexPath.row].name
-        cell.checkBoxButton.isSelected = ToDoItems[indexPath.row].completed
+        cell.toDoItem = ToDoItems[indexPath.row]
         return cell
     }
     
