@@ -58,6 +58,22 @@ class ToDoDetailTableViewController: UITableViewController {
         dateLabel.textColor = (reminderSwitch.isOn ? .black : .gray)
         dateLabel.text = dateFormatter.string(from: toDoItem.date)
         enableDisableSaveButton(text: nameField.text!)
+        updateReminderSwitch()
+    }
+    
+    func updateReminderSwitch() {
+        LocalNotificationManager.isAuthorized { (authorized) in
+            DispatchQueue.main.async {
+                if authorized == false && self.reminderSwitch.isOn {
+                    self.oneButtonAlert(title: "User Has Not Allowed Notifications", message: "To receive alerts for reminders, open the Settings app, select ToDo List > Notifications > Allow Notifications")
+                    self.reminderSwitch.isOn = false
+                }
+                self.view.endEditing(true)
+                self.dateLabel.textColor = (self.reminderSwitch.isOn ? .black : .gray)
+                self.tableView.beginUpdates()
+                self.tableView.endUpdates()
+            }
+        }
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
@@ -82,10 +98,7 @@ class ToDoDetailTableViewController: UITableViewController {
     }
     
     @IBAction func reminderSwitchChanged(_ sender: UISwitch) {
-        self.view.endEditing(true)
-        dateLabel.textColor = (reminderSwitch.isOn ? .black : .gray)
-        tableView.beginUpdates()
-        tableView.endUpdates()
+        updateReminderSwitch()
     }
     
     
